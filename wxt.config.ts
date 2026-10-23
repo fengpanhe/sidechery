@@ -36,6 +36,7 @@ export default defineConfig({
       manifest.permissions.push('contextMenus')
       manifest.permissions.push('favicon')
       manifest.permissions.push('webNavigation')
+      manifest.permissions.push('alarms')
       manifest.optional_permissions = manifest.optional_permissions.filter(
         (permission: string) => !['proxy', 'tabHide', 'webRequestBlocking'].includes(permission)
       )

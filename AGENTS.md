@@ -53,6 +53,7 @@ The product branding is Sidechery. Preserve `sidebery` only for upstream referen
 - Chromium manifest/action icons use supersampled raster `src/assets/logo-{16,20,24,32,40,48,64,128}.png` generated from `logo.svg`; the intermediate sizes cover fractional and HiDPI toolbar scale factors. Chrome falls back to a puzzle icon for SVG manifest icons. Regenerate every PNG when the source logo changes.
 - Media injections are passed as functions from `src/injections/` instead of emitted standalone scripts. This keeps `browser.scripting.executeScript` compatible with WXT output.
 - Background initialization is wrapped in `defineBackground`; listeners must remain synchronously registered inside that callback.
+- Automatic snapshots are scheduled after settings and tabs load. Chromium uses a named repeating `alarms` event registered synchronously; preserve its deadline across worker starts and wait for initialization before taking a snapshot. Without a connected sidebar, Chromium reads saved tree metadata through `session-values`. Firefox retains its timer and upstream tree handling. Chromium snapshot auto-export uses data URLs because service workers cannot create blob URLs; export failures must not prevent local snapshot storage.
 - Vite module preloading is disabled because Chromium extension pages reject generated chunk preloads as cross-world resource mismatches; normal ESM imports still load the chunks.
 - pnpm is the package manager. Keep `pnpm-lock.yaml`; do not restore `package-lock.json`.
 

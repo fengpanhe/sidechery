@@ -17,6 +17,25 @@ declare namespace browser {
     scale?: number
   }
 
+  namespace alarms {
+    interface Alarm {
+      name: string
+      scheduledTime: number
+      periodInMinutes?: number
+    }
+
+    interface AlarmCreateInfo {
+      when?: number
+      delayInMinutes?: number
+      periodInMinutes?: number
+    }
+
+    function create(name: string, info: AlarmCreateInfo): Promise<void>
+    function get(name: string): Promise<Alarm | undefined>
+    function clear(name: string): Promise<boolean>
+    const onAlarm: EventTarget<(alarm: Alarm) => void>
+  }
+
   /**
    * Runtime
    *

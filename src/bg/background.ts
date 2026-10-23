@@ -82,7 +82,6 @@ export default defineBackground(() => {
   Permissions.setupListeners()
   Favicons.load()
   Menu.setupListeners()
-  Snapshots.scheduleSnapshots()
 
   IPC.onConnected(E.InstanceType.sidebar, winId => {
     Logs.info('IPC.onConnected sidebar', winId)
@@ -115,10 +114,11 @@ export default defineBackground(() => {
   Omnibox.setupListeners()
   Omnibox.load()
 
-  void (async function main() {
+  const initialized = (async function main() {
     await Promise.all([Windows.load(), Containers.load(), Settings.load(), Info.loadVersionInfo()])
     await Sidebar.load()
     await Tabs.load()
+    await Snapshots.scheduleSnapshots(true)
 
     Logs.info(`Init end: ${performance.now() - ts}ms`)
 
@@ -136,6 +136,8 @@ export default defineBackground(() => {
       }
     }
   })()
+
+  Snapshots.setupListeners(initialized)
 
   function initToolbarButton(): void {
     void Menu.createBrowserActionMenu()
