@@ -56,43 +56,44 @@ section(ref="el")
     :folded="true"
     :opts="Settings.getOpts('tabRmBtn')"
     @update:value="Settings.saveDebounced(150)")
-  SelectField(
-    label="settings.activate_after_closing"
-    optLabel="settings.activate_after_closing_"
-    dbg="activateAfterClosing"
-    v-model:value="Settings.state.activateAfterClosing"
-    :default="DEFAULT_SETTINGS.activateAfterClosing"
-    :folded="true"
-    :opts="Settings.getOpts('activateAfterClosing')"
-    @update:value="Settings.saveDebounced(150)")
-  .sub-fields
-    ToggleField(
-      label="settings.activate_after_closing_stay_in_panel"
-      dbg="activateAfterClosingStayInPanel"
-      v-model:value="Settings.state.activateAfterClosingStayInPanel"
-      :default="DEFAULT_SETTINGS.activateAfterClosingStayInPanel"
+  template(v-if="Info.isFirefox")
+    SelectField(
+      label="settings.activate_after_closing"
+      optLabel="settings.activate_after_closing_"
+      dbg="activateAfterClosing"
+      v-model:value="Settings.state.activateAfterClosing"
+      :default="DEFAULT_SETTINGS.activateAfterClosing"
+      :folded="true"
+      :opts="Settings.getOpts('activateAfterClosing')"
       @update:value="Settings.saveDebounced(150)")
-    ToggleField(
-      label="settings.activate_after_closing_global"
-      dbg="activateAfterClosingGlobal"
-      v-model:value="Settings.state.activateAfterClosingGlobal"
-      :default="DEFAULT_SETTINGS.activateAfterClosingGlobal"
-      :inactive="Settings.state.activateAfterClosing !== 'prev_act'"
-      @update:value="Settings.saveDebounced(150)")
-    ToggleField(
-      label="settings.activate_after_closing_no_folded"
-      dbg="activateAfterClosingNoFolded"
-      v-model:value="Settings.state.activateAfterClosingNoFolded"
-      :default="DEFAULT_SETTINGS.activateAfterClosingNoFolded"
-      :inactive="Settings.state.activateAfterClosing !== 'prev_act'"
-      @update:value="Settings.saveDebounced(150)")
-    ToggleField(
-      label="settings.activate_after_closing_no_discarded"
-      dbg="activateAfterClosingNoDiscarded"
-      v-model:value="Settings.state.activateAfterClosingNoDiscarded"
-      :default="DEFAULT_SETTINGS.activateAfterClosingNoDiscarded"
-      :inactive="Settings.state.activateAfterClosing === 'none'"
-      @update:value="Settings.saveDebounced(150)")
+    .sub-fields
+      ToggleField(
+        label="settings.activate_after_closing_stay_in_panel"
+        dbg="activateAfterClosingStayInPanel"
+        v-model:value="Settings.state.activateAfterClosingStayInPanel"
+        :default="DEFAULT_SETTINGS.activateAfterClosingStayInPanel"
+        @update:value="Settings.saveDebounced(150)")
+      ToggleField(
+        label="settings.activate_after_closing_global"
+        dbg="activateAfterClosingGlobal"
+        v-model:value="Settings.state.activateAfterClosingGlobal"
+        :default="DEFAULT_SETTINGS.activateAfterClosingGlobal"
+        :inactive="Settings.state.activateAfterClosing !== 'prev_act'"
+        @update:value="Settings.saveDebounced(150)")
+      ToggleField(
+        label="settings.activate_after_closing_no_folded"
+        dbg="activateAfterClosingNoFolded"
+        v-model:value="Settings.state.activateAfterClosingNoFolded"
+        :default="DEFAULT_SETTINGS.activateAfterClosingNoFolded"
+        :inactive="Settings.state.activateAfterClosing !== 'prev_act'"
+        @update:value="Settings.saveDebounced(150)")
+      ToggleField(
+        label="settings.activate_after_closing_no_discarded"
+        dbg="activateAfterClosingNoDiscarded"
+        v-model:value="Settings.state.activateAfterClosingNoDiscarded"
+        :default="DEFAULT_SETTINGS.activateAfterClosingNoDiscarded"
+        :inactive="Settings.state.activateAfterClosing === 'none'"
+        @update:value="Settings.saveDebounced(150)")
   ToggleField(
     label="settings.tabs_unread_mark"
     dbg="tabsUnreadMark"
@@ -701,6 +702,7 @@ import * as Settings from 'src/services/settings.fg'
 import * as Permissions from 'src/services/permissions.fg'
 import * as SetupPage from 'src/services/setup-page.fg'
 import * as Tabs from 'src/services/tabs.fg'
+import * as Info from 'src/services/info'
 import CountField from '../../components/count-field.vue'
 import ToggleField from '../../components/toggle-field.vue'
 import SelectField from '../../components/select-field.vue'

@@ -63,6 +63,7 @@ These are not handled by the build migration yet:
 - Container controls outside the main settings section still need to be hidden on Chromium; native contextual identities remain unavailable there.
 - `menus.overrideContext` remains Firefox-only and needs guards at call sites.
 - `browser.pageAction`, `tabs.hide/show`, window `titlePreface`, and Firefox proxy behavior need guards or alternatives.
+- Chromium has no tab succession API (`successorTabId`/`moveInSuccession`), so native closes (Cmd+W, tab strip) and sidebar closes use Chrome's own next-tab choice. The "activate after closing" settings are hidden on the Chromium setup page; stored values still affect discard and `nativeHighlight` removal paths.
 - The Chromium background service worker still contains timer and in-memory lifetime assumptions.
 
 When merging upstream, preserve these boundaries, route new Firefox-only calls through the relevant compatibility layer, and update this file when another divergence is introduced.
