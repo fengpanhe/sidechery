@@ -1286,6 +1286,32 @@ export function repinTabs(tabIds: ID[]): void {
   }
 }
 
+async function duplicateTab(
+  tabId: ID,
+  active: boolean,
+  index: number,
+  parentId: ID,
+  panelId: ID
+): Promise<browser.tabs.Tab> {
+  let nativeIndex = index
+  if (Info.isChromium) {
+    // Chrome inserts next to the source, even when its sidebar branch ends later.
+    // Read the native index because earlier duplicates may still be waiting to move.
+    const source = await browser.tabs.get(tabId)
+    nativeIndex = source.index + 1
+    if (source.pinned) index = nativeIndex
+  }
+  Tabs.setNewTabPosition(index, parentId, panelId, undefined, nativeIndex)
+  const position = Tabs.newTabsPosition[nativeIndex]
+  try {
+    return await TabsApi.duplicate(tabId, { active, index })
+  } catch (err) {
+    // A failed duplicate must not leave placement data for an unrelated new tab.
+    if (Tabs.newTabsPosition[nativeIndex] === position) delete Tabs.newTabsPosition[nativeIndex]
+    throw err
+  }
+}
+
 /**
  * Duplicate tabs
  */
@@ -1340,17 +1366,26 @@ export async function duplicateTabs(tabIds: ID[], asChild?: boolean): Promise<vo
     }
 
     const oldNewIds: Record<ID, ID> = {}
-    Tabs.setNewTabPosition(index, asChild ? tab.id : tab.parentId, dstPanelId)
     if (active && tab.discarded) active = false
-    const dupTab = await browser.tabs.duplicate(tabId, { active, index })
+    const dupTab = await duplicateTab(
+      tabId,
+      active,
+      index,
+      asChild ? tab.id : tab.parentId,
+      dstPanelId
+    )
     oldNewIds[tabId] = dupTab.id
 
     for (const [descendantTabId, descendantParentId] of descendantsToDuplicate) {
       index++
       const dupDescendantParentId = oldNewIds[descendantParentId]
-      Tabs.setNewTabPosition(index, dupDescendantParentId, dstPanelId)
-      const dupOpts = { active: false, index }
-      const dupDescendantTab = await browser.tabs.duplicate(descendantTabId, dupOpts)
+      const dupDescendantTab = await duplicateTab(
+        descendantTabId,
+        false,
+        index,
+        dupDescendantParentId,
+        dstPanelId
+      )
       oldNewIds[descendantTabId] = dupDescendantTab.id
     }
   }

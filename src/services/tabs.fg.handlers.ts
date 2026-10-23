@@ -463,8 +463,8 @@ async function onTabCreated(nativeTab: NativeTab, attached?: boolean) {
         panel = Sidebar.panels.find(p => Utils.isTabsPanel(p)) as TabsPanel
       }
     }
-    index = tab.index
-    if (panel) {
+    index = position.index ?? tab.index
+    if (panel && !(Info.isChromium && tab.pinned)) {
       if (index > panel.nextTabIndex) index = panel.nextTabIndex
       else if (index < panel.startTabIndex) index = panel.startTabIndex
     }
@@ -2007,6 +2007,7 @@ function onTabActivated(info: browser.tabs.ActiveInfo): void {
 }
 
 export const TESTING = {
+  onTabCreated,
   onBeforeNavigate,
   onNavigationFailed,
   onSameDocumentNavigation,
