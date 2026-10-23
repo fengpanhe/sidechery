@@ -53,6 +53,7 @@ export function setupListeners(): void {
     Store.onKeyChange('sidebarCSS', css => {
       applyCustomCSS(css)
       Sidebar.recalcElementSizesDebounced()
+      Sidebar.recalcMinTabHeightDebounced(500)
     })
   }
 }
@@ -100,6 +101,7 @@ export async function loadCustomSidebarCSS(): Promise<void> {
   applyCustomCSS(stored.sidebarCSS)
   // Recalculate sizes when custom CSS is changed
   Sidebar.recalcElementSizesDebounced()
+  Sidebar.recalcMinTabHeightDebounced(500)
 }
 
 /**
@@ -190,6 +192,7 @@ export async function importStyles(styles: CustomStyles) {
     if (styles.sidebarCSS) applyCustomCSS(styles.sidebarCSS)
     else removeCustomCSS()
     Sidebar.recalcElementSizesDebounced()
+    Sidebar.recalcMinTabHeightDebounced(500)
   }
 }
 

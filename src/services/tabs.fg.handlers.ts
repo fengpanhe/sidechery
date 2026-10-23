@@ -464,6 +464,10 @@ async function onTabCreated(nativeTab: NativeTab, attached?: boolean) {
       }
     }
     index = tab.index
+    if (panel) {
+      if (index > panel.nextTabIndex) index = panel.nextTabIndex
+      else if (index < panel.startTabIndex) index = panel.startTabIndex
+    }
     tab.openerTabId = position.parent
     if (position.unread !== undefined) tab.unread = position.unread
     delete Tabs.newTabsPosition[tab.index]
@@ -608,9 +612,9 @@ async function onTabCreated(nativeTab: NativeTab, attached?: boolean) {
   if (panel && tab.index !== index) {
     handleNewTabMove(tab)
   }
-  // If the prev newtab move already scheduled defer it to be sure that
+  // If the prev newtab move already scheduled, defer it to be sure that
   // sidebery consumed all batched newtab events.
-  else if (handleNewTabMoveTimeout !== undefined) {
+  else if (newTabMoveInProgress) {
     handleNewTabMove()
   }
 
@@ -821,6 +825,7 @@ const NEW_TAB_MOVE_DELAY = 200
 let handleNewTabMoveTimeout: number | undefined
 let newTabToMove: Tab | undefined
 let waitingNewTabMove: (() => void)[] = []
+let newTabMoveInProgress = false
 
 function handleNewTabMove(newTab?: Tab) {
   // Change the target tab only if the newTab is set.
@@ -831,12 +836,14 @@ function handleNewTabMove(newTab?: Tab) {
       // Reset the previous new tab to sort all tabs
       newTabToMove = undefined
     }
-    // There is no new tab and timeout is not started
-    else if (handleNewTabMoveTimeout === undefined) {
+    // There is no new tab and no movement is in progress
+    else if (!newTabMoveInProgress) {
       // Set tab to move as this is the first new tab in a while (NEW_TAB_MOVE_DELAY)
       newTabToMove = newTab
     }
   }
+
+  newTabMoveInProgress = true
 
   clearTimeout(handleNewTabMoveTimeout)
   handleNewTabMoveTimeout = setTimeout(() => {
@@ -852,10 +859,8 @@ function handleNewTabMove(newTab?: Tab) {
     }
 
     const tab = newTabToMove
-    newTabToMove = undefined
-
     if (!tab) {
-      Tabs.sortNativeTabs()
+      Tabs.sortNativeTabs().finally(() => (newTabMoveInProgress = false))
     } else {
       tab.moving = true
       Utils.GLOBAL_QUEUE.add(browser.tabs.move, tab.id, { index: tab.index })
@@ -863,6 +868,8 @@ function handleNewTabMove(newTab?: Tab) {
           Logs.err('Tabs.handleNewTabMove: Cannot move the tab to the correct position:', err)
         })
         .finally(() => {
+          newTabMoveInProgress = false
+          newTabToMove = undefined
           tab.moving = undefined
 
           if (waitingNewTabMove.length) {
@@ -1087,16 +1094,21 @@ function onTabUpdated(tabId: ID, change: browser.tabs.ChangeInfo, nativeTab: Nat
     }
   }
 
-  // Handle Firefox internal favicon
-  if (change.favIconUrl?.startsWith('chrome:')) {
-    if (Info.isFirefox) {
-      if (change.favIconUrl === 'chrome://global/skin/icons/warning.svg') {
-        tab.warn = true
-        tab.reactive.warn = true
+  // Handle favicon
+  if (change.favIconUrl !== undefined) {
+    // Ignore `null` favicon
+    if (change.favIconUrl === null) change.favIconUrl = undefined
+    // Handle Firefox internal favicon
+    else if (change.favIconUrl.startsWith('chrome:')) {
+      if (Info.isFirefox) {
+        if (change.favIconUrl === 'chrome://global/skin/icons/warning.svg') {
+          tab.warn = true
+          tab.reactive.warn = true
+        }
+        change.favIconUrl = ''
+      } else {
+        change.favIconUrl = Favicons.getNativeFavicon(change.url ?? tab.url)
       }
-      change.favIconUrl = ''
-    } else {
-      change.favIconUrl = Favicons.getNativeFavicon(change.url ?? tab.url)
     }
   }
 
@@ -1222,7 +1234,7 @@ function onTabUpdated(tabId: ID, change: browser.tabs.ChangeInfo, nativeTab: Nat
     const actualPanel = Sidebar.panelsById[tab.panelId]
 
     if (Utils.isTabsPanel(actualPanel) && !actualPanel.reactive.len) {
-      if (actualPanel.noEmpty) {
+      if (actualPanel.noEmpty && !Sidebar.convertingPanelLock) {
         Tabs.createTabInPanel(actualPanel)
       }
     }
@@ -1523,7 +1535,7 @@ function onTabRemoved(tabId: ID, info: browser.tabs.RemoveInfo, detached?: boole
   else Sidebar.removeFromVisibleTabs(panel.id, tabId)
 
   // No-empty
-  if (!tab.pinned && panel.noEmpty && !panel.reactive.len) {
+  if (!tab.pinned && panel.noEmpty && !panel.reactive.len && !Sidebar.convertingPanelLock) {
     Tabs.createTabInPanel(panel, { active: false })
   }
 

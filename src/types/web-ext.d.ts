@@ -17,19 +17,6 @@ declare namespace browser {
     scale?: number
   }
 
-  type ColorName =
-    | 'blue'
-    | 'turquoise'
-    | 'cyan'
-    | 'green'
-    | 'yellow'
-    | 'orange'
-    | 'red'
-    | 'pink'
-    | 'purple'
-    | 'toolbar'
-    | 'gray'
-
   /**
    * Runtime
    *
@@ -378,7 +365,7 @@ declare namespace browser {
       attention?: boolean
       audible?: boolean
       discarded?: boolean
-      favIconUrl?: string
+      favIconUrl?: string | null
       groupId?: ID
       hidden?: boolean
       isArticle?: boolean
@@ -682,7 +669,7 @@ declare namespace browser {
       cookieStoreId: string
       name: string
       icon: string
-      color: ColorName
+      color: string
       colorCode: string
     }
 
@@ -698,8 +685,18 @@ declare namespace browser {
 
     interface UpdateDetails {
       name?: string
-      color?: ColorName
+      color?: string
       icon?: string
+    }
+
+    interface ColorInfo {
+      color: string
+      colorCode: string
+    }
+
+    interface IconInfo {
+      icon: string
+      iconUrl: string
     }
 
     function query(details: QueryDetails): Promise<Container[]>
@@ -707,6 +704,8 @@ declare namespace browser {
     function create(details: CreateDetails): Promise<Container>
     function update(id: string, details: UpdateDetails): Promise<Container>
     function remove(id: string): Promise<Container>
+    function getSupportedColors(): Promise<ColorInfo[]>
+    function getSupportedIcons(): Promise<IconInfo[]>
 
     interface ChangeInfo {
       contextualIdentity: Container

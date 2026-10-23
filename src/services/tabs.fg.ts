@@ -2791,9 +2791,11 @@ export async function paste(dst: T.DstPlaceInfo) {
 export function triggerFlashAnimation(tab: T.Tab): void {
   if (tab.flashAnimationTimeout) return
   if (tab.flashFxEl) tab.flashFxEl.setAttribute('data-run', 'true')
+  if (tab.stickyFlashFxEl) tab.stickyFlashFxEl.setAttribute('data-run', 'true')
   tab.flashAnimationTimeout = setTimeout(() => {
     tab.flashAnimationTimeout = undefined
     if (tab.flashFxEl) tab.flashFxEl.setAttribute('data-run', 'false')
+    if (tab.stickyFlashFxEl) tab.stickyFlashFxEl.setAttribute('data-run', 'false')
   }, 1000)
 }
 
@@ -2958,6 +2960,9 @@ export function renderTitle(tab: T.Tab, forcedTitle?: string) {
   if (tab.titleEl) {
     tab.titleEl.innerText = forcedTitle ?? getDisplayTitle(tab)
   }
+  if (tab.stickyTitleEl) {
+    tab.stickyTitleEl.innerText = forcedTitle ?? getDisplayTitle(tab)
+  }
   if (Settings.state.forceUpdTooltip) {
     updateTooltip(tab.id)
   }
@@ -2965,6 +2970,11 @@ export function renderTitle(tab: T.Tab, forcedTitle?: string) {
 
 export function renderFavicon(tab: T.Tab, fallback = false) {
   renderFaviconInto(tab, tab.favImgEl, tab.favSvgUseEl, fallback)
+  renderFaviconInto(tab, tab.stickyFavImgEl, tab.stickyFavSvgUseEl, fallback)
+}
+
+export function renderStickyFavicon(tab: T.Tab, placeholder: boolean) {
+  renderFaviconInto(tab, tab.stickyFavImgEl, tab.stickyFavSvgUseEl, placeholder)
 }
 
 export function renderFaviconInto(

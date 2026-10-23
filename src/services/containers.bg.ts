@@ -12,6 +12,7 @@ export * from 'src/services/containers'
 
 let ready = false
 let deferredEventHandling: (() => void)[] = []
+let colors: browser.contextualIdentities.ColorInfo[] = []
 
 export async function load(): Promise<void> {
   Logs.info('Containers.load')
@@ -28,12 +29,15 @@ export async function load(): Promise<void> {
   }
 
   setupListeners()
-  const [ffContainers, storage] = await Promise.all([
+  const [ffContainers, ffCtrColors, storage] = await Promise.all([
     browser.contextualIdentities.query({}),
+    browser.contextualIdentities.getSupportedColors(),
     browser.storage.local.get<Stored>('containers'),
   ])
   const containers = storage.containers ?? {}
   let saveNeeded = false
+
+  colors = ffCtrColors
 
   for (const ffContainer of ffContainers) {
     let container = containers[ffContainer.cookieStoreId]

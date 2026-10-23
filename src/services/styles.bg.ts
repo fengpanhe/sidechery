@@ -75,7 +75,8 @@ export async function updateWindowStyles(
   }
 
   if (Settings.state.colorScheme === 'sys') Styles.updColorScheme(newWinStyles)
-  else if (Settings.state.colorScheme === 'ff' && !browser.theme) Styles.updColorScheme(newWinStyles)
+  else if (Settings.state.colorScheme === 'ff' && !browser.theme)
+    Styles.updColorScheme(newWinStyles)
   else if (Settings.state.colorScheme === 'dark') Styles.updColorScheme(newWinStyles, 'dark')
   else if (Settings.state.colorScheme === 'light') Styles.updColorScheme(newWinStyles, 'light')
 

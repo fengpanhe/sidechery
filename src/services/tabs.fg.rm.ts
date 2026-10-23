@@ -285,7 +285,6 @@ export async function removeTabs(
 
   // Set tabs to be removed
   const parents: Record<ID, ID> = {}
-  const lastTabToo = panel.tabs[panel.tabs.length - 1]?.id === tabs[count - 1]?.id
   let visibleLen = 0
   let activeTab: Tab | undefined
 
@@ -302,8 +301,8 @@ export async function removeTabs(
 
   const tabsInfo = Tabs.getTabsInfo(toRemove, true)
 
-  if (Tabs.removingTabs && Tabs.removingTabs.length) {
-    removingTabs = [...Tabs.removingTabs, ...toRemove]
+  if (removingTabs && removingTabs.length) {
+    removingTabs = [...removingTabs, ...toRemove]
   } else {
     removingTabs = [...toRemove]
   }
@@ -312,7 +311,7 @@ export async function removeTabs(
   Tabs.rememberRemoved(tabs)
 
   // No-empty panels
-  if (count === panel.reactive.len && panel.noEmpty) {
+  if (count === panel.reactive.len && panel.noEmpty && !Sidebar.convertingPanelLock) {
     Tabs.createTabInPanel(panel)
   }
 

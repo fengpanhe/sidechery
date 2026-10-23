@@ -51,6 +51,10 @@ export interface Tab extends NativeTab {
   favImgEl?: HTMLImageElement
   favSvgUseEl?: SVGElement
   flashFxEl?: HTMLElement
+  stickyTitleEl?: HTMLElement
+  stickyFavImgEl?: HTMLImageElement
+  stickyFavSvgUseEl?: SVGElement
+  stickyFlashFxEl?: HTMLElement
 
   checkingSessionRestore?: Promise<boolean>
   resolveSessionRestoreDetection?: (isSessionRestore: boolean) => void

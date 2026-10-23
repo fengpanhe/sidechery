@@ -66,6 +66,7 @@ export function calcStickyTabs(panel: TabsPanel): void {
   const reactive = panel.reactive
   const scrollTop = panel.scrollEl.scrollTop
   const scrollBottom = panel.scrollEl.offsetHeight + scrollTop
+  if (scrollBottom === scrollTop) return
   const ntbbHeight = Settings.newTabBarPositionAfterTabs ? (panel.ntbbEl?.offsetHeight ?? 0) : 0
   const stack = Settings.stickyAncestorTabsLayoutCol
   const limit = Settings.stickyAncestorTabsLimit + (Settings.state.stickyActiveTab ? 1 : 0)
@@ -81,9 +82,12 @@ export function calcStickyTabs(panel: TabsPanel): void {
     if (
       tab.el &&
       !tab.removing &&
+      !tab.invisible &&
       scrollBottom <
         tab.el.offsetTop +
-          (stack ? (bottomOffset += tab.el.offsetHeight) : tab.el.offsetHeight) +
+          (stack
+            ? (bottomOffset += Sidebar.tabMinHeight + Sidebar.tabMargin)
+            : Sidebar.tabMinHeight + Sidebar.tabMargin) +
           ntbbHeight
     ) {
       bottomLen++
@@ -98,11 +102,11 @@ export function calcStickyTabs(panel: TabsPanel): void {
   const topLimit = limit >= bottomLen ? limit - bottomLen : 0
   for (let i = stickyBranch.length; i-- > 0;) {
     tab = stickyBranch[i]
-    if (!tab.el || tab.removing) continue
+    if (!tab.el || tab.removing || tab.invisible) continue
     if (scrollTop > tab.el.offsetTop - topOffset) {
       topLen++
       if (stack) {
-        const h = tab.el.offsetHeight
+        const h = Sidebar.tabMinHeight + Sidebar.tabMargin
         topOffset += h
         stickyTopOffsets[i] = h
         if (topLen >= topLimit) topOffset -= stickyTopOffsets.pop() ?? 0

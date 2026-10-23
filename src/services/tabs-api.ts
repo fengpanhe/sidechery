@@ -36,7 +36,10 @@ export function warmup(tabId: ID): Promise<void> {
   return browser.tabs.warmup(tabId)
 }
 
-export function capture(tab: browser.tabs.Tab, imageDetails: browser.ImageDetails): Promise<string> {
+export function capture(
+  tab: browser.tabs.Tab,
+  imageDetails: browser.ImageDetails
+): Promise<string> {
   if (Info.isFirefox) return browser.tabs.captureTab(tab.id, imageDetails)
   if (!tab.active) return Promise.resolve('')
 
