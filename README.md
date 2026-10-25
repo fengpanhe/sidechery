@@ -35,7 +35,7 @@ and these custom styles:
 }
 
 .Tab[data-pin=false] .fav {
-   margin: 0 var(--tabs-inner-gap) 0 var(--tabs-inner-gap);
+  margin-left: calc(var(--tabs-fav-margin) - 2px);
 }
 
 .NavigationBar {
