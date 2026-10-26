@@ -11,6 +11,7 @@ import * as IPC from 'src/services/ipc'
 import * as Containers from 'src/services/containers.bg'
 import { ItemInfo } from 'src/types/tabs'
 import * as SidebarConf from 'src/services/sidebar-config'
+import * as Info from 'src/services/info'
 
 import { GLOB_PINNED_ID, MAX_SIZE_LIMIT } from 'src/services/snapshots'
 import { getNormalizedSnapshot, minimizeSnapshot, prepareExport } from 'src/services/snapshots'
@@ -26,6 +27,23 @@ export const Snapshots = {
 
 const MIN_SNAP_INTERVAL = 60_000
 const MIN_LIMITING_COUNT = 1
+const SNAPSHOT_ALARM = 'auto-snapshot'
+
+export function setupListeners(ready: Promise<void>): void {
+  if (Info.isFirefox) return
+
+  // Register synchronously so Chrome can wake the worker for this event.
+  browser.alarms.onAlarm.addListener(async alarm => {
+    if (alarm.name !== SNAPSHOT_ALARM) return
+    try {
+      await ready
+      if (getSnapInterval() < MIN_SNAP_INTERVAL) return
+      await createSnapshot(true)
+    } catch (err) {
+      Logs.err('Cannot create automatic snapshot', err)
+    }
+  })
+}
 
 /**
  * Create base snapshot
@@ -131,7 +149,7 @@ export async function createSnapshot(auto = false): Promise<Snapshot | undefined
   }
 
   if (Settings.state.snapAutoExport) {
-    exportSnapshot(currentSnapshot)
+    await exportSnapshot(currentSnapshot).catch(err => Logs.err('Cannot export snapshot', err))
   }
 
   minimizeSnapshot(stored.snapshots, currentSnapshot)
@@ -181,7 +199,7 @@ function getExportPath(expInfo: SnapExportInfo) {
   return normPath
 }
 
-export function exportSnapshot(snapshot: NormalizedSnapshot) {
+export async function exportSnapshot(snapshot: NormalizedSnapshot): Promise<void> {
   if (!browser?.downloads) return
 
   const expType = Settings.state.snapAutoExportType
@@ -192,23 +210,23 @@ export function exportSnapshot(snapshot: NormalizedSnapshot) {
 
   const path = getExportPath(expInfo)
 
-  if (expInfo.jsonFile) {
-    browser.downloads.download({
-      url: URL.createObjectURL(expInfo.jsonFile),
-      filename: `${path}.json`,
+  const downloads: Promise<number>[] = []
+  async function download(file: Blob, extension: string): Promise<number> {
+    const url = Info.isFirefox
+      ? URL.createObjectURL(file)
+      : `data:${file.type};charset=utf-8,${encodeURIComponent(await file.text())}`
+
+    return browser.downloads.download({
+      url,
+      filename: `${path}.${extension}`,
       conflictAction: 'overwrite',
       saveAs: false,
     })
   }
 
-  if (expInfo.mdFile) {
-    browser.downloads.download({
-      url: URL.createObjectURL(expInfo.mdFile),
-      filename: `${path}.md`,
-      conflictAction: 'overwrite',
-      saveAs: false,
-    })
-  }
+  if (expInfo.jsonFile) downloads.push(download(expInfo.jsonFile, 'json'))
+  if (expInfo.mdFile) downloads.push(download(expInfo.mdFile, 'md'))
+  await Promise.all(downloads)
 }
 
 function isSnapshotRedundant(prevSnapshot: Snapshot, snapshot: Snapshot): boolean {
@@ -237,17 +255,33 @@ function isSnapshotRedundant(prevSnapshot: Snapshot, snapshot: Snapshot): boolea
   return true
 }
 
-export async function scheduleSnapshots(): Promise<void> {
+export async function scheduleSnapshots(preserveAlarm = false): Promise<void> {
   clearTimeout(scheduleTimeout)
 
   const interval = getSnapInterval()
-  if (interval < MIN_SNAP_INTERVAL) return
+  if (interval < MIN_SNAP_INTERVAL) {
+    if (Info.isChromium) await browser.alarms.clear(SNAPSHOT_ALARM)
+    return
+  }
+
+  if (Info.isChromium && preserveAlarm) {
+    const alarm = await browser.alarms.get(SNAPSHOT_ALARM)
+    // Repeated worker starts must not postpone an existing alarm.
+    if (alarm?.periodInMinutes === interval / 60_000) return
+  }
 
   const elapsed = await getLastSnapTimeElapsed()
   let nextInterval = interval - elapsed
   if (nextInterval < MIN_SNAP_INTERVAL) nextInterval = MIN_SNAP_INTERVAL
 
-  scheduleNextSnapshot(nextInterval)
+  if (Info.isChromium) {
+    await browser.alarms.create(SNAPSHOT_ALARM, {
+      delayInMinutes: nextInterval / 60_000,
+      periodInMinutes: interval / 60_000,
+    })
+  } else {
+    scheduleNextSnapshot(nextInterval)
+  }
 }
 
 let scheduleTimeout: number | undefined

@@ -145,6 +145,7 @@ export interface ActiveTabsHistory {
 }
 
 export interface NewTabPosition {
+  index?: number
   parent: ID
   panel: ID
   unread?: boolean

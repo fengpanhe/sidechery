@@ -605,15 +605,17 @@ export async function reopenTabsInNewContainer(tabIds: ID[]): Promise<void> {
 }
 
 /**
- * Set expected position (parent/panel) of new tab by its index
+ * Set expected position of a new tab by its native insertion index
  */
 export function setNewTabPosition(
   index: number,
   parentId: ID,
   panelId: ID,
-  unread?: boolean
+  unread?: boolean,
+  nativeIndex = index
 ): void {
-  Tabs.newTabsPosition[index] = {
+  Tabs.newTabsPosition[nativeIndex] = {
+    index,
     parent: parentId,
     panel: panelId,
     unread: unread,

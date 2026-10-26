@@ -16,6 +16,8 @@ import * as TabsApi from 'src/services/tabs-api'
 import * as Omnibox from 'src/services/omnibox.bg'
 import * as TabEvents from 'src/services/tabs-events'
 import * as ContextMenu from 'src/services/context-menu'
+import * as Info from 'src/services/info'
+import * as SessionValues from 'src/services/session-values'
 import { DetachedTabsInfo } from 'src/services/tabs.fg.move'
 import { translate } from 'src/dict'
 
@@ -611,7 +613,9 @@ export async function updateBgTabsTreeData(): Promise<void> {
       receivingSidebarTrees.push(IPC.sidebar(window.id, 'getTabsTreeData'))
     } else {
       Logs.warn('Tabs.updateBgTabsTreeData: No connected sidebar:', window.id)
-      receivingSidebarTrees.push(Promise.resolve([]))
+      receivingSidebarTrees.push(
+        Info.isChromium ? getStoredTabsTreeData(window.tabs ?? []) : Promise.resolve([])
+      )
     }
   }
 
@@ -650,6 +654,7 @@ export async function updateBgTabsTreeData(): Promise<void> {
       tab.panelId = D.NOID
       tab.customTitle = undefined
       tab.customColor = undefined
+      if (Info.isChromium) tab.folded = false
 
       const tabInfo = treeDataById[tab.id]
       if (!tabInfo) continue
@@ -663,6 +668,23 @@ export async function updateBgTabsTreeData(): Promise<void> {
       if (parent) tab.lvl = (parent.lvl ?? 0) + 1
     }
   }
+}
+
+async function getStoredTabsTreeData(tabs: T.BgTab[]): Promise<T.TabsTreeData> {
+  const tree = await Promise.all(
+    tabs.map(async tab => {
+      const data = await SessionValues.getTabValue<T.TabSessionData>(tab.id, 'data').catch(
+        () => undefined
+      )
+      if (!data) return []
+      const entry: T.TabTreeData = { id: tab.id, pid: data.panelId, tid: data.parentId }
+      if (data.folded) entry.f = 1
+      if (data.customTitle) entry.ct = data.customTitle
+      if (data.customColor) entry.cc = data.customColor
+      return [entry]
+    })
+  )
+  return tree.flat()
 }
 
 export async function initInternalPageScripts(tabs: T.BgTab[]) {

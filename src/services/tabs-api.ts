@@ -26,6 +26,28 @@ export function update(
   return browser.tabs.update(tabId, updateProperties)
 }
 
+export async function duplicate(
+  tabId: ID,
+  options: browser.tabs.DuplOpts = {}
+): Promise<browser.tabs.Tab> {
+  if (Info.isFirefox) return browser.tabs.duplicate(tabId, options)
+
+  let activeTab: browser.tabs.Tab | undefined
+  if (options.active === false) {
+    const source = await browser.tabs.get(tabId)
+    ;[activeTab] = await browser.tabs.query({ windowId: source.windowId, active: true })
+  }
+
+  // Chromium accepts only the ID and always activates the duplicate. The sidebar's
+  // predefined new-tab position handles index changes through its normal move queue.
+  const tab = await browser.tabs.duplicate(tabId)
+  if (activeTab && tab.active) {
+    await browser.tabs.update(activeTab.id, { active: true })
+    return { ...tab, active: false, highlighted: false }
+  }
+  return tab
+}
+
 export function moveInSuccession(tabIds: ID[], tabId?: ID): Promise<void> {
   if (typeof browser.tabs.moveInSuccession !== 'function') return Promise.resolve()
   return browser.tabs.moveInSuccession(tabIds, tabId)
